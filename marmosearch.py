@@ -44,12 +44,24 @@ def tweet_random_result(status):
   else:
     response.raise_for_status()
 
-def tweet_positive_result(response, status):
-  api.update_status('Have you heard "' + response.tracks()[0].title + '," it might be just what you need right now: '+ shorten_url(response.tracks()[0].url), status.id)
+def tweet_positive_result(response, status, search_params):
+  api.update_status('Have you heard "' + response.tracks()[0].title + '," it might be just what you need right now: '+ shorten_url(build_search_url(search_params)), status.id)
 
 def shorten_url(longUrl):
   response = requests.get("https://api-ssl.bitly.com/v3/shorten?access_token=" + config['BITLY_TOKEN'] + "&longUrl=" + urllib.quote_plus(longUrl) + "&format=txt")
   return response.content.rstrip()
+
+def build_search_url(search_params):
+  result = ""
+  for k, v in search_params.items():
+    result += "&" + k + "=" if k != 'mood' else "&" + "search" + "="
+    if k == 'arc':
+      result += "+".join([w.lower() for w in v])
+    elif k == 'energy':
+      result += "|".join(v)
+    else:
+      result += "+".join(v)
+  return config['BASE_URL'] + "/browse?" + result[1:]
 
 #override tweepy.StreamListener to add logic to on_status
 class MyStreamListener(tweepy.StreamListener):
@@ -70,22 +82,18 @@ class MyStreamListener(tweepy.StreamListener):
         response = requests.get(url + "?" + data)
         if response.ok:
           if response.json():
-            # if genre match found, send to genre page rather than track page?
-            # energies browse?energy=Low-Medium|Medium
-            # genres ?genres=Country+Spiritual
-            # mood search=%20Ethereal
-            # combo ?energy=Medium|Low-Medium&arc=ascending&instruments=Banjo+Strings&genres=Country+Spiritual
-            tweet_positive_result(response, status)
+            tweet_positive_result(response, status, search_params)
           else:
             tweet_random_result(status)
         else:
           response.raise_for_status()
       else:
-        data = urlencode({"q": {"search": [status.text.replace("#marmomood", "")]}, "limit": 1, "order":"rolling_rank DESC"})
+        search_params['search'] = [status.text.replace("#marmomood", "")]
+        data = urlencode({"q": search_params, "limit": 1, "order":"rolling_rank DESC"})
         response = requests.get(url + "?" + data)
         if response.ok:
           if response.json():
-            tweet_positive_result(response, status)
+            tweet_positive_result(response, status, search_params)
           else:
             tweet_random_result(status)
         else:
