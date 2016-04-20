@@ -56,7 +56,7 @@ class MyStreamListener(tweepy.StreamListener):
             # genres ?genres=Country+Spiritual
             # mood search=%20Ethereal
             # combo ?energy=Medium|Low-Medium&arc=ascending&instruments=Banjo+Strings&genres=Country+Spiritual
-            api.update_status("Check out " + response.tracks()[0].url + ", it might be just what you need right now!", status.id)
+            api.update_status("Check out " + shorten_url(response.tracks()[0].url) + ", it might be just what you need right now!", status.id)
           else:
             get_random_tracks(status)
         else:
@@ -67,7 +67,7 @@ class MyStreamListener(tweepy.StreamListener):
         response = requests.get(url + "?" + data)
         if response.ok:
           if response.json():
-            api.update_status("Check out " + response.tracks[0].url + ", it might be just what you need right now!", status.id)
+            api.update_status("Check out " + shorten_url(response.tracks[0].url) + ", it might be just what you need right now!", status.id)
           else:
             get_random_tracks(status)
         else:
@@ -78,11 +78,15 @@ def get_random_tracks(status):
   response = requests.get(url + "?" + data)
   if response.ok:
     if response.json():
-      api.update_status("I couldn't find anything like that. Why don't you check out " + response.tracks()[randint(0,9)].url + ", it's one of our hottest songs right now!", status.id)
+      api.update_status("I couldn't find anything like that. Why don't you check out " + shorten_url(response.tracks()[randint(0,9)].url) + ", it's one of our hottest songs right now!", status.id)
     else:
       api.update_status("Your search was so specific, I couldn't find anything. Please try again.", status.id)
   else:
     response.raise_for_status()
+
+def shorten_url(longUrl):
+  response = requests.get("https://api-ssl.bitly.com/v3/shorten?access_token=" + config['BITLY_TOKEN'] + "&longUrl=" + urllib.quote_plus(longUrl) + "&format=txt")
+  return response.content.rstrip()
 
 myStreamListener = MyStreamListener()
 myStream = tweepy.Stream(auth = api.auth, listener=myStreamListener)
