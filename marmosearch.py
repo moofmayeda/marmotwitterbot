@@ -38,14 +38,14 @@ def tweet_random_result(status):
   if response.ok:
     if response.json():
       random = randint(0,9)
-      api.update_status("I couldn't find that. Why don't you check out " + response.tracks()[random].title + ", it's one of our hottest songs right now: " + shorten_url(response.tracks()[random].url), status.id)
+      api.update_status("I couldn't find that. Why don't you check out " + '"' + response.tracks()[random].title + '," ' + "it's one of our hottest songs right now: " + shorten_url(response.tracks()[random].url), status.id)
     else:
       api.update_status("Your search was so specific, I couldn't find anything. Please try again.", status.id)
   else:
     response.raise_for_status()
 
 def tweet_positive_result(response, status):
-  api.update_status("Have you heard " + response.tracks()[0].title + ", it might be just what you need right now: "+ shorten_url(response.tracks()[0].url), status.id)
+  api.update_status('Have you heard "' + response.tracks()[0].title + '," it might be just what you need right now: '+ shorten_url(response.tracks()[0].url), status.id)
 
 def shorten_url(longUrl):
   response = requests.get("https://api-ssl.bitly.com/v3/shorten?access_token=" + config['BITLY_TOKEN'] + "&longUrl=" + urllib.quote_plus(longUrl) + "&format=txt")
