@@ -67,37 +67,32 @@ def build_search_url(search_params):
 class MyStreamListener(tweepy.StreamListener):
 
   def on_status(self, status):
-    print(status.text)
-    print(status.id)
-    print(status.in_reply_to_status_id)
-    print(status.user.id)
-    if status.in_reply_to_status_id is None:
-      search_params = {}
-      for word in status.text.split(" "):
-        results = [k for k, v in dict.iteritems() if word.capitalize() in v]
-        if results:
-          search_params.setdefault(results[0], []).append(word.capitalize())
-      if search_params:
-        data = urlencode({"q": search_params, "limit": 1, "order":"rolling_rank DESC"})
-        response = requests.get(url + "?" + data)
-        if response.ok:
-          if response.json():
-            tweet_positive_result(response, status, search_params)
-          else:
-            tweet_random_result(status)
+    search_params = {}
+    for word in status.text.split(" "):
+      results = [k for k, v in dict.iteritems() if word.capitalize() in v]
+      if results:
+        search_params.setdefault(results[0], []).append(word.capitalize())
+    if search_params:
+      data = urlencode({"q": search_params, "limit": 1, "order":"rolling_rank DESC"})
+      response = requests.get(url + "?" + data)
+      if response.ok:
+        if response.json():
+          tweet_positive_result(response, status, search_params)
         else:
-          response.raise_for_status()
+          tweet_random_result(status)
       else:
-        search_params['search'] = [status.text.replace("#marmomood", "")]
-        data = urlencode({"q": search_params, "limit": 1, "order":"rolling_rank DESC"})
-        response = requests.get(url + "?" + data)
-        if response.ok:
-          if response.json():
-            tweet_positive_result(response, status, search_params)
-          else:
-            tweet_random_result(status)
+        response.raise_for_status()
+    else:
+      search_params['search'] = [status.text.replace("#marmomood", "")]
+      data = urlencode({"q": search_params, "limit": 1, "order":"rolling_rank DESC"})
+      response = requests.get(url + "?" + data)
+      if response.ok:
+        if response.json():
+          tweet_positive_result(response, status, search_params)
         else:
-          response.raise_for_status()
+          tweet_random_result(status)
+      else:
+        response.raise_for_status()
 
 myStreamListener = MyStreamListener()
 myStream = tweepy.Stream(auth = api.auth, listener=myStreamListener)
