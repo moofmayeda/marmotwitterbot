@@ -4,6 +4,7 @@
 import tweepy, requests, json, inspect, urllib
 from multidimensional_urlencode import urlencode
 from configobj import ConfigObj
+from random import randint
 
 config = ConfigObj('config.txt')
 auth = tweepy.OAuthHandler(config['CONSUMER_KEY'], config['CONSUMER_SECRET'])
@@ -34,44 +35,54 @@ class Track(object):
 #override tweepy.StreamListener to add logic to on_status
 class MyStreamListener(tweepy.StreamListener):
 
-    def on_status(self, status):
-        print(status.text)
-        print(status.id)
-        print(status.in_reply_to_status_id)
-        print(status.user.id)
-        if status.in_reply_to_status_id is None:
-          search_params = {}
-          for word in status.text.split(" "):
-            results = [k for k, v in dict.iteritems() if word.capitalize() in v]
-            if results:
-              search_params.setdefault(results[0], []).append(word.capitalize())
-          if search_params:
-            data = urlencode({"q": search_params, "limit": 14, "order":"rolling_rank DESC"})
-            response = requests.get(url + "?" + data)
-            if response.ok:
-              if response.json():
-                # if genre match found, send to genre page rather than track page?
-                # energies browse?energy=Low-Medium|Medium
-                # genres ?genres=Country+Spiritual
-                # mood search=%20Ethereal
-                # combo ?energy=Medium|Low-Medium&arc=ascending&instruments=Banjo+Strings&genres=Country+Spiritual
-                api.update_status("Check out " + response.tracks()[0].url + ", it might be just what you need right now!", status.id)
-              else:
-                # add random shuffle if no results found
-                api.update_status("Your search was so specific, I couldn't find anything. Please try again.", status.id)
-            else:
-              print "NOT OK"
-              response.raise_for_status()
+  def on_status(self, status):
+    print(status.text)
+    print(status.id)
+    print(status.in_reply_to_status_id)
+    print(status.user.id)
+    if status.in_reply_to_status_id is None:
+      search_params = {}
+      for word in status.text.split(" "):
+        results = [k for k, v in dict.iteritems() if word.capitalize() in v]
+        if results:
+          search_params.setdefault(results[0], []).append(word.capitalize())
+      if search_params:
+        data = urlencode({"q": search_params, "limit": 14, "order":"rolling_rank DESC"})
+        response = requests.get(url + "?" + data)
+        if response.ok:
+          if response.json():
+            # if genre match found, send to genre page rather than track page?
+            # energies browse?energy=Low-Medium|Medium
+            # genres ?genres=Country+Spiritual
+            # mood search=%20Ethereal
+            # combo ?energy=Medium|Low-Medium&arc=ascending&instruments=Banjo+Strings&genres=Country+Spiritual
+            api.update_status("Check out " + response.tracks()[0].url + ", it might be just what you need right now!", status.id)
           else:
-            data = urlencode({"q": {"search": [status.text.replace("#marmomood", "")]}, "limit": 14, "order":"rolling_rank DESC"})
-            response = requests.get(url + "?" + data)
-            if response.ok:
-              if response.json():
-                api.update_status("Check out " + response.tracks[0].url + ", it might be just what you need right now!", status.id)
-              else:
-                api.update_status("Your search was so specific, I couldn't find anything. Please try again.", status.id)
-            else:
-              response.raise_for_status()
+            get_random_tracks(status)
+        else:
+          print "NOT OK"
+          response.raise_for_status()
+      else:
+        data = urlencode({"q": {"search": [status.text.replace("#marmomood", "")]}, "limit": 14, "order":"rolling_rank DESC"})
+        response = requests.get(url + "?" + data)
+        if response.ok:
+          if response.json():
+            api.update_status("Check out " + response.tracks[0].url + ", it might be just what you need right now!", status.id)
+          else:
+            get_random_tracks(status)
+        else:
+          response.raise_for_status()
+
+def get_random_tracks(status):
+  data = urlencode({"limit": 10, "order":"rolling_rank DESC"})
+  response = requests.get(url + "?" + data)
+  if response.ok:
+    if response.json():
+      api.update_status("I couldn't find anything like that. Why don't you check out " + response.tracks()[randint(0,9)].url + ", it's one of our hottest songs right now!", status.id)
+    else:
+      api.update_status("Your search was so specific, I couldn't find anything. Please try again.", status.id)
+  else:
+    response.raise_for_status()
 
 myStreamListener = MyStreamListener()
 myStream = tweepy.Stream(auth = api.auth, listener=myStreamListener)
