@@ -60,14 +60,13 @@ class MyStreamListener(tweepy.StreamListener):
           else:
             get_random_tracks(status)
         else:
-          print "NOT OK"
           response.raise_for_status()
       else:
         data = urlencode({"q": {"search": [status.text.replace("#marmomood", "")]}, "limit": 14, "order":"rolling_rank DESC"})
         response = requests.get(url + "?" + data)
         if response.ok:
           if response.json():
-            api.update_status("Check out " + shorten_url(response.tracks[0].url) + ", it might be just what you need right now!", status.id)
+            api.update_status("Check out " + shorten_url(response.tracks()[0].url) + ", it might be just what you need right now!", status.id)
           else:
             get_random_tracks(status)
         else:
