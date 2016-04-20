@@ -29,7 +29,7 @@ for method_name, method in inspect.getmembers(Response, inspect.ismethod):
 class Track(object):
   def __init__(self, id, title):
     self.id = id
-    self.title = title
+    self.title = title if len(title) <= 25 else title[:22] + "..."
     self.url = config['BASE_URL'] + "/browse/" + str(id)
 
 def tweet_random_result(status):
