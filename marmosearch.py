@@ -66,7 +66,7 @@ class MyStreamListener(tweepy.StreamListener):
         if results:
           search_params.setdefault(results[0], []).append(word.capitalize())
       if search_params:
-        data = urlencode({"q": search_params, "limit": 14, "order":"rolling_rank DESC"})
+        data = urlencode({"q": search_params, "limit": 1, "order":"rolling_rank DESC"})
         response = requests.get(url + "?" + data)
         if response.ok:
           if response.json():
@@ -81,7 +81,7 @@ class MyStreamListener(tweepy.StreamListener):
         else:
           response.raise_for_status()
       else:
-        data = urlencode({"q": {"search": [status.text.replace("#marmomood", "")]}, "limit": 14, "order":"rolling_rank DESC"})
+        data = urlencode({"q": {"search": [status.text.replace("#marmomood", "")]}, "limit": 1, "order":"rolling_rank DESC"})
         response = requests.get(url + "?" + data)
         if response.ok:
           if response.json():
