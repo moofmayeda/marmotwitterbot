@@ -1,3 +1,2 @@
-configobj==5.0.6
 multidimensional-urlencode==0.0.3
 six==1.10.0

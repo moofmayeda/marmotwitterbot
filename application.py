@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
  
-import tweepy, requests, json, inspect, urllib
+import tweepy, requests, json, inspect, urllib, os
 from multidimensional_urlencode import urlencode
-from configobj import ConfigObj
 from random import randint
 
-config = ConfigObj('config.txt')
-auth = tweepy.OAuthHandler(config['CONSUMER_KEY'], config['CONSUMER_SECRET'])
-auth.set_access_token(config['ACCESS_KEY'], config['ACCESS_SECRET'])
+auth = tweepy.OAuthHandler(os.environ['CONSUMER_KEY'], os.environ['CONSUMER_SECRET'])
+auth.set_access_token(os.environ['ACCESS_KEY'], os.environ['ACCESS_SECRET'])
 api = tweepy.API(auth)
 myUserID = api.me().id
-url = config['BASE_URL'] + "/filter_tracks"
+url = os.environ['BASE_URL'] + "/filter_tracks"
 dict = {'energy': ['Low', 'Low-Medium', 'Medium', 'Medium-High', 'High'], 'genres': ['Ambient', 'Beats', 'Blues & Jazz', 'Country', 'Electronic', 'Folk', 'Orchestral', 'Pop', 'Rock', 'Soulful', 'Spiritual', 'World'], 'arc': ['Steady', 'Ascending', 'Descending', 'Middle Crescendo', 'Multiple Crescendos', 'Frenetic'], 'keywords': ['Acoustic', 'Bass', 'Bold', 'Calming', 'Electronic', 'Enlightening', 'Ethereal', 'Flat', 'Folk', 'Happy', 'Harmonic', 'Heavy', 'Indie', 'Inspiring', 'Instrumental', 'Lo-fi', 'Loud', 'Melodic', 'Orchestral', 'Pop', 'Powerful', 'Progressive', 'Rhythmic', 'Sad', 'Soft', 'Solo', 'Soothing', 'Soulful', 'Spiritual', 'Stirring', 'Unplugged', 'Uplifting', 'Vocal'], 'instruments': ['Acoustic Guitar', 'Banjo', 'Big Drums', 'Drum Machine', 'Electric Guitar', 'Glockenspiel/Toy Piano', 'Horns/Brass', 'Mandolin', 'Oohs & Ahhs', 'Organ', 'Piano', 'Stomps/Claps', 'Strings', 'Synthesizer', 'Ukulele'], 'mood': ['A Journey', 'Angelic', 'Anthemic', 'Bouncy', 'Bright', 'Burdened', 'Calm', 'Cinematic', 'Classic', 'Cold', 'Confident', 'Dark', 'Depressed', 'Dynamic', 'Ecstatic', 'Emotional', 'Empowering', 'Energetic', 'Epic', 'Ethereal', 'Exciting', 'Powerful', 'Precise', 'Pumped', 'Quirky', 'Rebellious', 'Reflective', 'Revelatory', 'Romantic', 'Sentimental', 'Sexy', 'Silly', 'Sinister', 'Slick', 'Sombre', 'Sparse', 'Sporadic', 'Stoic', 'Upbeat', 'Vulnerable', 'Whimsical', 'Youthful', 'Feminine', 'Fun', 'Gritty', 'Honorable', 'Hopeful', 'Human', 'Imaginative', 'Industrial', 'Inspiring', 'Intimate', 'Light', 'Masculine', 'Meandering', 'Mechanical', 'Minimal', 'Mischievous', 'Mysterious', 'Optimistic', 'Organic', 'Pensive', 'Playful', 'Positive']}
 
 class Response(object):
@@ -30,7 +28,7 @@ class Track(object):
   def __init__(self, id, title):
     self.id = id
     self.title = title if len(title) <= 25 else title[:22] + "..."
-    self.url = config['BASE_URL'] + "/browse/" + str(id)
+    self.url = os.environ['BASE_URL'] + "/browse/" + str(id)
 
 def tweet_random_result(status):
   data = urlencode({"limit": 10, "order":"rolling_rank DESC"})
@@ -48,7 +46,7 @@ def tweet_positive_result(response, status, search_params):
   api.update_status('Have you heard "' + response.tracks()[0].title + '," it might be just what you need right now: '+ shorten_url(build_search_url(search_params)), status.id)
 
 def shorten_url(longUrl):
-  response = requests.get("https://api-ssl.bitly.com/v3/shorten?access_token=" + config['BITLY_TOKEN'] + "&longUrl=" + urllib.quote_plus(longUrl) + "&format=txt")
+  response = requests.get("https://api-ssl.bitly.com/v3/shorten?access_token=" + os.environ['BITLY_TOKEN'] + "&longUrl=" + urllib.quote_plus(longUrl) + "&format=txt")
   return response.content.rstrip()
 
 def build_search_url(search_params):
@@ -61,7 +59,7 @@ def build_search_url(search_params):
       result += "|".join(v)
     else:
       result += "+".join(v)
-  return config['BASE_URL'] + "/browse?" + result[1:]
+  return os.environ['BASE_URL'] + "/browse?" + result[1:]
 
 #override tweepy.StreamListener to add logic to on_status
 class MyStreamListener(tweepy.StreamListener):
