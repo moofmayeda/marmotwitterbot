@@ -46,9 +46,9 @@ def tweet_random_result(status):
   else:
     response.raise_for_status()
 
-def tweet_positive_result(response, status, search_params):
+def tweet_positive_result(response, status):
   random_track = random.choice(response.tracks())
-  message = '''@{0} have you heard "{1}," it might be just what you need: {2}'''.format(status.user.screen_name, random_track.title, shorten_url(build_search_url(search_params)))
+  message = '''@{0} have you heard "{1}," it might be just what you need: {2}'''.format(status.user.screen_name, random_track.title, shorten_url(random_track.url))
   api.update_status(shorten_message(message, random_track), in_reply_to_status_id = status.id)
 
 def shorten_url(longUrl):
@@ -58,18 +58,6 @@ def shorten_url(longUrl):
 def shorten_message(message, track):
   length = len(message.replace(track.title, ""))
   return message.replace(track.title, track.display_title(140-length))
-
-def build_search_url(search_params):
-  result = ""
-  for k, v in search_params.items():
-    result += "&" + k + "=" if k != 'mood' else "&" + "search" + "="
-    if k == 'arc':
-      result += "+".join([w.lower() for w in v])
-    elif k == 'energy':
-      result += "|".join(v)
-    else:
-      result += "+".join(v)
-  return os.environ['BASE_URL'] + "/browse?" + result[1:]
 
 #override tweepy.StreamListener to add logic to on_status
 class MyStreamListener(tweepy.StreamListener):
@@ -85,7 +73,7 @@ class MyStreamListener(tweepy.StreamListener):
       response = requests.get(url + "?" + data)
       if response.ok:
         if response.json():
-          tweet_positive_result(response, status, search_params)
+          tweet_positive_result(response, status)
         else:
           tweet_random_result(status)
       else:
@@ -96,7 +84,7 @@ class MyStreamListener(tweepy.StreamListener):
       response = requests.get(url + "?" + data)
       if response.ok:
         if response.json():
-          tweet_positive_result(response, status, search_params)
+          tweet_positive_result(response, status)
         else:
           tweet_random_result(status)
       else:
