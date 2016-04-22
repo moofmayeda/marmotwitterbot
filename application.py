@@ -37,9 +37,9 @@ def tweet_random_result(status):
   response = requests.get(url + "?" + data)
   if response.ok:
     if response.json():
-      random = randint(0,9)
-      message = '''@{0} I couldn't find that. Why don't you check out "{1}," it's one of our hottest songs: {2}'''.format(status.user.screen_name, response.tracks()[random].title, shorten_url(response.tracks()[random].url))
-      api.update_status(shorten_message(message, response.tracks()[random]), in_reply_to_status_id = status.id)
+      random_track = random.choice(response.tracks())
+      message = '''@{0} I couldn't find that. Why don't you check out "{1}," it's one of our hottest songs: {2}'''.format(status.user.screen_name, random_track.title, shorten_url(random_track.url))
+      api.update_status(shorten_message(message, random_track), in_reply_to_status_id = status.id)
     else:
       message = "@{0} your search was so specific, I couldn't find anything. Please try again.".format(status.user.screen_name)
       api.update_status(message, in_reply_to_status_id = status.id)
@@ -47,8 +47,9 @@ def tweet_random_result(status):
     response.raise_for_status()
 
 def tweet_positive_result(response, status, search_params):
-  message = '''@{0} have you heard "{1}," it might be just what you need: {2}'''.format(status.user.screen_name, response.tracks()[0].title, shorten_url(build_search_url(search_params)))
-  api.update_status(shorten_message(message, response.tracks()[0]), in_reply_to_status_id = status.id)
+  random_track = random.choice(response.tracks())
+  message = '''@{0} have you heard "{1}," it might be just what you need: {2}'''.format(status.user.screen_name, random_track.title, shorten_url(build_search_url(search_params)))
+  api.update_status(shorten_message(message, random_track), in_reply_to_status_id = status.id)
 
 def shorten_url(longUrl):
   response = requests.get("https://api-ssl.bitly.com/v3/shorten?access_token=" + os.environ['BITLY_TOKEN'] + "&longUrl=" + urllib.quote_plus(longUrl) + "&format=txt")
@@ -80,7 +81,7 @@ class MyStreamListener(tweepy.StreamListener):
       if results:
         search_params.setdefault(results[0], []).append(word.capitalize())
     if search_params:
-      data = urlencode({"q": search_params, "limit": 1, "order":"rolling_rank DESC"})
+      data = urlencode({"q": search_params, "limit": 5, "order":"rolling_rank DESC"})
       response = requests.get(url + "?" + data)
       if response.ok:
         if response.json():
