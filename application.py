@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
  
-import tweepy, requests, json, inspect, urllib, os
+import tweepy, requests, json, inspect, urllib, os, random
 from multidimensional_urlencode import urlencode
-from random import randint
 
 auth = tweepy.OAuthHandler(os.environ['CONSUMER_KEY'], os.environ['CONSUMER_SECRET'])
 auth.set_access_token(os.environ['ACCESS_KEY'], os.environ['ACCESS_SECRET'])
