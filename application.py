@@ -26,8 +26,11 @@ for method_name, method in inspect.getmembers(Response, inspect.ismethod):
 class Track(object):
   def __init__(self, id, title):
     self.id = id
-    self.title = title if len(title) <= 25 else title[:22] + "..."
+    self.title = title.rstrip()
     self.url = os.environ['BASE_URL'] + "/browse/" + str(id)
+
+  def display_title(self, max):
+    return self.title if len(self.title) <= max else self.title[:(max-3)] + "..."
 
 def tweet_random_result(status):
   data = urlencode({"limit": 10, "order":"rolling_rank DESC"})
@@ -35,18 +38,25 @@ def tweet_random_result(status):
   if response.ok:
     if response.json():
       random = randint(0,9)
-      api.update_status("@" + status.user.screen_name + " I couldn't find that. Why don't you check out " + '"' + response.tracks()[random].title + '," ' + "it's one of our hottest songs: " + shorten_url(response.tracks()[random].url), in_reply_to_status_id = status.id)
+      message = '''@{0} I couldn't find that. Why don't you check out "{1}," it's one of our hottest songs: {2}'''.format(status.user.screen_name, response.tracks()[random].title, shorten_url(response.tracks()[random].url))
+      api.update_status(shorten_message(message, response.tracks()[random]), in_reply_to_status_id = status.id)
     else:
-      api.update_status("@" + status.user.screen_name + " your search was so specific, I couldn't find anything. Please try again.", in_reply_to_status_id = status.id)
+      message = "@{0} your search was so specific, I couldn't find anything. Please try again.".format(status.user.screen_name)
+      api.update_status(message, in_reply_to_status_id = status.id)
   else:
     response.raise_for_status()
 
 def tweet_positive_result(response, status, search_params):
-  api.update_status("@" + status.user.screen_name + ' have you heard "' + response.tracks()[0].title + '," it might be just what you need: '+ shorten_url(build_search_url(search_params)), in_reply_to_status_id = status.id)
+  message = '''@{0} have you heard "{1}," it might be just what you need: {2}'''.format(status.user.screen_name, response.tracks()[0].title, shorten_url(build_search_url(search_params)))
+  api.update_status(shorten_message(message, response.tracks()[0]), in_reply_to_status_id = status.id)
 
 def shorten_url(longUrl):
   response = requests.get("https://api-ssl.bitly.com/v3/shorten?access_token=" + os.environ['BITLY_TOKEN'] + "&longUrl=" + urllib.quote_plus(longUrl) + "&format=txt")
   return response.content.rstrip()
+
+def shorten_message(message, track):
+  length = len(message.replace(track.title, ""))
+  return message.replace(track.title, track.display_title(140-length))
 
 def build_search_url(search_params):
   result = ""
